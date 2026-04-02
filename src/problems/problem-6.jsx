@@ -49,6 +49,7 @@ const SLOT_CENTERS = Array.from({ length: TOTAL_SLOTS }, (_, index) => {
   const row = Math.floor(index / GRID_SIZE);
   const origin = slotOrigin(col, row);
   return {
+    id: index,
     left: origin.left + SLOT_SIZE / 2,
     top: origin.top + SLOT_SIZE / 2,
   };
@@ -106,7 +107,37 @@ function Problem6() {
   // 5. Otherwise, update slotIds using setSlotIds so that:
   //    - If the piece was off-grid, put it into that slot (and optionally clear any piece that was there).
   //    - If the piece was already on-grid, swap it with whatever is in the target slot.
-  const handleDropOnBoard = (e) => {};
+  const handleDropOnBoard = (e) => {
+    const pieceId = Number(e.dataTransfer.getData("text/plain"));
+    const rect = e.currentTarget.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const nearestSlot = SLOT_CENTERS.reduce((closest, current) => {
+      const currentDist = Math.pow(mouseX - current.left, 2) + Math.pow(mouseY - current.top, 2);
+      const closestDist = Math.pow(mouseX - closest.left, 2) + Math.pow(mouseY - closest.top, 2);
+
+      return currentDist < closestDist ? current : closest;
+    });
+
+    const distToNearestSlot = Math.sqrt(Math.pow(mouseX - nearestSlot.left, 2) + Math.pow(mouseY - nearestSlot.top, 2));
+
+    if (distToNearestSlot > MAGNET_RADIUS) return;
+
+    const toIndex = nearestSlot.id;
+    const fromIndex = slotIds.indexOf(pieceId);
+    const next = [...slotIds];
+
+    if (fromIndex !== -1) {
+      const temp = next[fromIndex];
+      next[fromIndex] = next[toIndex];
+      next[toIndex] = temp;
+    } else {
+      next[toIndex] = pieceId;
+    }
+
+    setSlotIds(next);
+  };
 
   return (
     <section className="problem-view p-6">
